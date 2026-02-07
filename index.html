@@ -5,23 +5,77 @@
   <title>夜ご飯メーカー</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    input, button { font-size: 16px; margin: 5px 0; }
-    img { border-radius: 8px; margin-top: 5px; }
-    li { margin-bottom: 15px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: #fff7f2;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff7a7a;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    input, button {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    button {
+      background: #ff7a7a;
+      color: white;
+      border: none;
+      margin-top: 12px;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .item {
+      margin-bottom: 20px;
+    }
+
+    .item img {
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 8px;
+    }
+
+    .date {
+      font-size: 12px;
+      color: #999;
+    }
   </style>
 </head>
 <body>
-  <h1>夜ご飯メーカー</h1>
 
-  <input id="menuInput" placeholder="料理名">
-  <br>
-  <input type="file" id="imageInput" accept="image/*">
-  <br>
-  <button onclick="addMenu()">登録</button>
+  <h1>夜ご飯メーカー 🍽️</h1>
 
-  <h2>履歴</h2>
-  <ul id="menuList"></ul>
+  <div class="card">
+    <input id="menuInput" placeholder="料理名">
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="addMenu()">登録</button>
+  </div>
+
+  <div class="card">
+    <h2>履歴</h2>
+    <div id="menuList"></div>
+  </div>
 
   <script>
     let data = JSON.parse(localStorage.getItem("menus") || "[]");
@@ -56,12 +110,14 @@
     function render() {
       menuList.innerHTML = "";
       data.forEach(d => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <strong>${d.date} - ${d.menu}</strong><br>
-          <img src="${d.image}" width="150">
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <strong>${d.menu}</strong>
+          <div class="date">${d.date}</div>
+          <img src="${d.image}">
         `;
-        menuList.appendChild(li);
+        menuList.appendChild(div);
       });
     }
 

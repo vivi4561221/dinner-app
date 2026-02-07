@@ -4,13 +4,23 @@
   <meta charset="UTF-8">
   <title>夜ご飯メーカー</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { font-size: 16px; margin: 5px 0; }
+    img { border-radius: 8px; margin-top: 5px; }
+    li { margin-bottom: 15px; }
+  </style>
 </head>
 <body>
   <h1>夜ご飯メーカー</h1>
 
-  <input id="menuInput" placeholder="例：カレー">
-  <button onclick="addMenu()">追加</button>
+  <input id="menuInput" placeholder="料理名">
+  <br>
+  <input type="file" id="imageInput" accept="image/*">
+  <br>
+  <button onclick="addMenu()">登録</button>
 
+  <h2>履歴</h2>
   <ul id="menuList"></ul>
 
   <script>
@@ -21,25 +31,36 @@
     }
 
     function addMenu() {
-      const input = document.getElementById("menuInput");
-      const menu = input.value;
-      if (!menu) return;
+      const menu = menuInput.value;
+      const file = imageInput.files[0];
+      if (!menu || !file) {
+        alert("料理名と写真を入れてください");
+        return;
+      }
 
-      data.unshift({
-        menu,
-        date: new Date().toLocaleDateString()
-      });
-
-      save();
-      render();
-      input.value = "";
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        data.unshift({
+          menu,
+          date: new Date().toLocaleDateString(),
+          image: e.target.result
+        });
+        save();
+        render();
+        menuInput.value = "";
+        imageInput.value = "";
+      };
+      reader.readAsDataURL(file);
     }
 
     function render() {
       menuList.innerHTML = "";
       data.forEach(d => {
         const li = document.createElement("li");
-        li.textContent = d.date + " - " + d.menu;
+        li.innerHTML = `
+          <strong>${d.date} - ${d.menu}</strong><br>
+          <img src="${d.image}" width="150">
+        `;
         menuList.appendChild(li);
       });
     }

@@ -11,55 +11,21 @@
       margin: 0;
       padding: 20px;
     }
-
-    h1 {
-      text-align: center;
-      color: #ff7a7a;
-      margin-bottom: 20px;
-    }
-
+    h1 { text-align: center; color: #ff7a7a; margin-bottom: 10px; }
     .card {
-      background: white;
-      border-radius: 16px;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      background: white; border-radius: 16px; padding: 15px;
+      margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-
     input, button {
-      width: 100%;
-      font-size: 16px;
-      padding: 10px;
-      margin-top: 8px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
+      width: 100%; font-size: 16px; padding: 10px;
+      margin-top: 8px; border-radius: 10px; border: 1px solid #ddd;
     }
-
-    button {
-      background: #ff7a7a;
-      color: white;
-      border: none;
-      margin-top: 12px;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    .item {
-      margin-bottom: 20px;
-    }
-
-    .item img {
-      width: 100%;
-      border-radius: 12px;
-      margin-top: 8px;
-    }
-
-    .date {
-      font-size: 12px;
-      color: #999;
-    }
+    button { background: #ff7a7a; color: white; border: none; margin-top: 12px; }
+    .item { margin-bottom: 20px; }
+    .item img { width: 100%; border-radius: 12px; margin-top: 8px; }
+    .date { font-size: 12px; color: #999; }
+    .week { margin-top: 10px; }
+    .week div { margin: 4px 0; }
   </style>
 </head>
 <body>
@@ -70,6 +36,11 @@
     <input id="menuInput" placeholder="料理名">
     <input type="file" id="imageInput" accept="image/*">
     <button onclick="addMenu()">登録</button>
+  </div>
+
+  <div class="card">
+    <button onclick="generateWeek()">今週の献立を作る</button>
+    <div id="weekPlans"></div>
   </div>
 
   <div class="card">
@@ -87,10 +58,7 @@
     function addMenu() {
       const menu = menuInput.value;
       const file = imageInput.files[0];
-      if (!menu || !file) {
-        alert("料理名と写真を入れてください");
-        return;
-      }
+      if (!menu || !file) return alert("料理名と写真を入れてください");
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -119,6 +87,48 @@
         `;
         menuList.appendChild(div);
       });
+    }
+
+    // ===== ここから週間献立ロジック =====
+
+    const days = ["月","火","水","木","金","土","日"];
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function generateOneWeek() {
+      const recent = data.slice(0, 7).map(d => d.menu);
+      const candidates = data.filter(d => !recent.includes(d.menu));
+      const pool = candidates.length >= 7 ? candidates : data;
+      const shuffled = shuffle([...pool]);
+      return shuffled.slice(0, 7);
+    }
+
+    function generateWeek() {
+      if (data.length < 7) {
+        alert("最低7個以上メニューを登録してください");
+        return;
+      }
+
+      const planA = generateOneWeek();
+      const planB = generateOneWeek();
+      const planC = generateOneWeek();
+
+      weekPlans.innerHTML = `
+        <h3>案A（バランス）</h3>
+        <div class="week">${renderWeek(planA)}</div>
+        <h3>案B（簡単）</h3>
+        <div class="week">${renderWeek(planB)}</div>
+        <h3>案C（チャレンジ）</h3>
+        <div class="week">${renderWeek(planC)}</div>
+      `;
+    }
+
+    function renderWeek(plan) {
+      return plan.map((p, i) =>
+        `<div>${days[i]}：${p.menu}</div>`
+      ).join("");
     }
 
     render();

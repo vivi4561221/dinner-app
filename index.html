@@ -1,1 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>夜ご飯メーカー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+  <h1>夜ご飯メーカー</h1>
 
+  <input id="menuInput" placeholder="例：カレー">
+  <button onclick="addMenu()">追加</button>
+
+  <ul id="menuList"></ul>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem("menus") || "[]");
+
+    function save() {
+      localStorage.setItem("menus", JSON.stringify(data));
+    }
+
+    function addMenu() {
+      const input = document.getElementById("menuInput");
+      const menu = input.value;
+      if (!menu) return;
+
+      data.unshift({
+        menu,
+        date: new Date().toLocaleDateString()
+      });
+
+      save();
+      render();
+      input.value = "";
+    }
+
+    function render() {
+      menuList.innerHTML = "";
+      data.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = d.date + " - " + d.menu;
+        menuList.appendChild(li);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

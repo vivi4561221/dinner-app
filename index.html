@@ -11,127 +11,170 @@
       margin: 0;
       padding: 20px;
     }
-    h1 { text-align: center; color: #ff7a7a; margin-bottom: 10px; }
+    h1 { text-align: center; color: #ff7a7a; }
     .card {
-      background: white; border-radius: 16px; padding: 15px;
-      margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      background: white;
+      border-radius: 16px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    input, button {
-      width: 100%; font-size: 16px; padding: 10px;
-      margin-top: 8px; border-radius: 10px; border: 1px solid #ddd;
+    input, textarea, button {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
     }
-    button { background: #ff7a7a; color: white; border: none; margin-top: 12px; }
+    button { background: #ff7a7a; color: white; border: none; }
     .item { margin-bottom: 20px; }
     .item img { width: 100%; border-radius: 12px; margin-top: 8px; }
     .date { font-size: 12px; color: #999; }
-    .week { margin-top: 10px; }
     .week div { margin: 4px 0; }
+    .small { font-size: 13px; color: #666; }
   </style>
 </head>
 <body>
 
-  <h1>夜ご飯メーカー 🍽️</h1>
+<h1>夜ご飯メーカー 🍽️</h1>
 
-  <div class="card">
-    <input id="menuInput" placeholder="料理名">
-    <input type="file" id="imageInput" accept="image/*">
-    <button onclick="addMenu()">登録</button>
-  </div>
+<div class="card">
+  <h2>レシピ登録（候補）</h2>
+  <input id="recipeName" placeholder="料理名">
+  <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
+  <button onclick="addRecipe()">レシピ追加</button>
+</div>
 
-  <div class="card">
-    <button onclick="generateWeek()">今週の献立を作る</button>
-    <div id="weekPlans"></div>
-  </div>
+<div class="card">
+  <button onclick="generateWeek()">今週の献立を作る</button>
+  <div id="weekPlans"></div>
+</div>
 
-  <div class="card">
-    <h2>履歴</h2>
-    <div id="menuList"></div>
-  </div>
+<div class="card">
+  <h2>実際に食べた記録</h2>
+  <input id="menuInput" placeholder="料理名">
+  <input type="file" id="imageInput" accept="image/*">
+  <div class="small">※ 写真は入れなくてもOK</div>
+  <button onclick="addHistory()">記録する</button>
+</div>
 
-  <script>
-    let data = JSON.parse(localStorage.getItem("menus") || "[]");
+<div class="card">
+  <h2>履歴</h2>
+  <div id="historyList"></div>
+</div>
 
-    function save() {
-      localStorage.setItem("menus", JSON.stringify(data));
-    }
+<script>
+  let recipes = JSON.parse(localStorage.getItem("recipes") || "[]");
+  let history = JSON.parse(localStorage.getItem("history") || "[]");
 
-    function addMenu() {
-      const menu = menuInput.value;
-      const file = imageInput.files[0];
-      if (!menu || !file) return alert("料理名と写真を入れてください");
+  function saveAll() {
+    localStorage.setItem("recipes", JSON.stringify(recipes));
+    localStorage.setItem("history", JSON.stringify(history));
+  }
 
+  // レシピ登録
+  function addRecipe() {
+    if (!recipeName.value) return alert("料理名を入れてください");
+    recipes.push({
+      id: Date.now(),
+      name: recipeName.value,
+      recipe: recipeText.value
+    });
+    saveAll();
+    recipeName.value = "";
+    recipeText.value = "";
+    alert("レシピ追加しました");
+  }
+
+  // 履歴登録（写真は任意）
+  function addHistory() {
+    const menu = menuInput.value;
+    const file = imageInput.files[0];
+
+    if (!menu) return alert("料理名を入れてください");
+
+    if (file) {
       const reader = new FileReader();
       reader.onload = function(e) {
-        data.unshift({
-          menu,
-          date: new Date().toLocaleDateString(),
-          image: e.target.result
-        });
-        save();
-        render();
-        menuInput.value = "";
-        imageInput.value = "";
+        pushHistory(menu, e.target.result);
       };
       reader.readAsDataURL(file);
+    } else {
+      pushHistory(menu, null);
     }
+  }
 
-    function render() {
-      menuList.innerHTML = "";
-      data.forEach(d => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `
-          <strong>${d.menu}</strong>
-          <div class="date">${d.date}</div>
-          <img src="${d.image}">
-        `;
-        menuList.appendChild(div);
-      });
-    }
+  function pushHistory(menu, image) {
+    history.unshift({
+      menu,
+      date: new Date().toLocaleDateString(),
+      image
+    });
+    saveAll();
+    renderHistory();
+    menuInput.value = "";
+    imageInput.value = "";
+  }
 
-    // ===== ここから週間献立ロジック =====
+  function deleteHistory(index) {
+    if (!confirm("削除しますか？")) return;
+    history.splice(index, 1);
+    saveAll();
+    renderHistory();
+  }
 
-    const days = ["月","火","水","木","金","土","日"];
-
-    function shuffle(arr) {
-      return arr.sort(() => Math.random() - 0.5);
-    }
-
-    function generateOneWeek() {
-      const recent = data.slice(0, 7).map(d => d.menu);
-      const candidates = data.filter(d => !recent.includes(d.menu));
-      const pool = candidates.length >= 7 ? candidates : data;
-      const shuffled = shuffle([...pool]);
-      return shuffled.slice(0, 7);
-    }
-
-    function generateWeek() {
-      if (data.length < 7) {
-        alert("最低7個以上メニューを登録してください");
-        return;
-      }
-
-      const planA = generateOneWeek();
-      const planB = generateOneWeek();
-      const planC = generateOneWeek();
-
-      weekPlans.innerHTML = `
-        <h3>案A（バランス）</h3>
-        <div class="week">${renderWeek(planA)}</div>
-        <h3>案B（簡単）</h3>
-        <div class="week">${renderWeek(planB)}</div>
-        <h3>案C（チャレンジ）</h3>
-        <div class="week">${renderWeek(planC)}</div>
+  function renderHistory() {
+    historyList.innerHTML = "";
+    history.forEach((h, i) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <strong>${h.menu}</strong>
+        <div class="date">${h.date}</div>
+        ${h.image ? `<img src="${h.image}">` : ""}
+        <button onclick="deleteHistory(${i})">削除</button>
       `;
+      historyList.appendChild(div);
+    });
+  }
+
+  // 週間献立
+  const days = ["月","火","水","木","金","土","日"];
+
+  function shuffle(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+  }
+
+  function generateOneWeek() {
+    const shuffled = shuffle([...recipes]);
+    return shuffled.slice(0, 7);
+  }
+
+  function generateWeek() {
+    if (recipes.length < 7) {
+      alert("レシピを7個以上登録してください");
+      return;
     }
 
-    function renderWeek(plan) {
-      return plan.map((p, i) =>
-        `<div>${days[i]}：${p.menu}</div>`
-      ).join("");
-    }
+    const A = generateOneWeek();
+    const B = generateOneWeek();
+    const C = generateOneWeek();
 
-    render();
-  </script>
+    weekPlans.innerHTML = `
+      <h3>案A</h3>${renderWeek(A)}
+      <h3>案B</h3>${renderWeek(B)}
+      <h3>案C</h3>${renderWeek(C)}
+    `;
+  }
+
+  function renderWeek(plan) {
+    return `<div class="week">` +
+      plan.map((p,i)=>`<div>${days[i]}：${p.name}</div>`).join("") +
+      `</div>`;
+  }
+
+  renderHistory();
+</script>
 </body>
 </html>

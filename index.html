@@ -28,7 +28,7 @@
       border: 1px solid #ddd;
     }
     button { background: #ff7a7a; color: white; border: none; }
-    .item { margin-bottom: 20px; }
+    .item { margin-bottom: 15px; }
     .item img { width: 100%; border-radius: 12px; margin-top: 8px; }
     .date { font-size: 12px; color: #999; }
     .week div { margin: 4px 0; }
@@ -39,6 +39,7 @@
 
 <h1>夜ご飯メーカー 🍽️</h1>
 
+<!-- レシピ登録 -->
 <div class="card">
   <h2>レシピ登録（候補）</h2>
   <input id="recipeName" placeholder="料理名">
@@ -46,11 +47,19 @@
   <button onclick="addRecipe()">レシピ追加</button>
 </div>
 
+<!-- レシピ一覧 -->
+<div class="card">
+  <h2>📚 レシピ一覧</h2>
+  <div id="recipeList"></div>
+</div>
+
+<!-- 週間献立 -->
 <div class="card">
   <button onclick="generateWeek()">今週の献立を作る</button>
   <div id="weekPlans"></div>
 </div>
 
+<!-- 履歴登録 -->
 <div class="card">
   <h2>実際に食べた記録</h2>
   <input id="menuInput" placeholder="料理名">
@@ -59,6 +68,7 @@
   <button onclick="addHistory()">記録する</button>
 </div>
 
+<!-- 履歴一覧 -->
 <div class="card">
   <h2>履歴</h2>
   <div id="historyList"></div>
@@ -73,7 +83,8 @@
     localStorage.setItem("history", JSON.stringify(history));
   }
 
-  // レシピ登録
+  // ---------- レシピ ----------
+
   function addRecipe() {
     if (!recipeName.value) return alert("料理名を入れてください");
     recipes.push({
@@ -84,14 +95,35 @@
     saveAll();
     recipeName.value = "";
     recipeText.value = "";
-    alert("レシピ追加しました");
+    renderRecipes();
   }
 
-  // 履歴登録（写真は任意）
+  function renderRecipes() {
+    recipeList.innerHTML = "";
+    recipes.forEach((r, i) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <strong>${r.name}</strong>
+        <div class="small">${r.recipe || "（レシピ未入力）"}</div>
+        <button onclick="deleteRecipe(${i})">削除</button>
+      `;
+      recipeList.appendChild(div);
+    });
+  }
+
+  function deleteRecipe(index) {
+    if (!confirm("このレシピを削除しますか？")) return;
+    recipes.splice(index, 1);
+    saveAll();
+    renderRecipes();
+  }
+
+  // ---------- 履歴 ----------
+
   function addHistory() {
     const menu = menuInput.value;
     const file = imageInput.files[0];
-
     if (!menu) return alert("料理名を入れてください");
 
     if (file) {
@@ -139,7 +171,8 @@
     });
   }
 
-  // 週間献立
+  // ---------- 週間献立 ----------
+
   const days = ["月","火","水","木","金","土","日"];
 
   function shuffle(arr) {
@@ -174,7 +207,10 @@
       `</div>`;
   }
 
+  // 初期描画
+  renderRecipes();
   renderHistory();
 </script>
+
 </body>
 </html>

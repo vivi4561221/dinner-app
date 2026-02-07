@@ -1,8 +1,8 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>献立作成</title>
+  <title>夜ご飯メーカー</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -28,11 +28,20 @@
       border: 1px solid #ddd;
     }
     button { background: #ff7a7a; color: white; border: none; }
-    .item { margin-bottom: 15px; }
+    .item { margin-bottom: 12px; }
     .item img { width: 100%; border-radius: 12px; margin-top: 8px; }
     .date { font-size: 12px; color: #999; }
-    .week div { margin: 4px 0; }
     .small { font-size: 13px; color: #666; }
+
+    /* 小さい削除ボタン */
+    .delete-btn {
+      background: none;
+      color: #ff7a7a;
+      border: none;
+      font-size: 14px;
+      margin-left: 8px;
+      padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -47,10 +56,10 @@
   <button onclick="addRecipe()">レシピ追加</button>
 </div>
 
-<!-- レシピ一覧 -->
+<!-- レシピ一覧（ボタンで開く） -->
 <div class="card">
-  <h2>📚 レシピ一覧</h2>
-  <div id="recipeList"></div>
+  <button onclick="toggleRecipes()">📚 レシピ一覧を見る</button>
+  <div id="recipeList" style="display:none; margin-top:10px;"></div>
 </div>
 
 <!-- 週間献立 -->
@@ -98,15 +107,26 @@
     renderRecipes();
   }
 
+  function toggleRecipes() {
+    if (recipeList.style.display === "none") {
+      recipeList.style.display = "block";
+      renderRecipes();
+    } else {
+      recipeList.style.display = "none";
+    }
+  }
+
   function renderRecipes() {
     recipeList.innerHTML = "";
     recipes.forEach((r, i) => {
       const div = document.createElement("div");
       div.className = "item";
       div.innerHTML = `
-        <strong>${r.name}</strong>
+        <div>
+          <strong>${r.name}</strong>
+          <button class="delete-btn" onclick="deleteRecipe(${i})">✕</button>
+        </div>
         <div class="small">${r.recipe || "（レシピ未入力）"}</div>
-        <button onclick="deleteRecipe(${i})">削除</button>
       `;
       recipeList.appendChild(div);
     });
@@ -165,7 +185,7 @@
         <strong>${h.menu}</strong>
         <div class="date">${h.date}</div>
         ${h.image ? `<img src="${h.image}">` : ""}
-        <button onclick="deleteHistory(${i})">削除</button>
+        <button class="delete-btn" onclick="deleteHistory(${i})">✕</button>
       `;
       historyList.appendChild(div);
     });
@@ -202,13 +222,12 @@
   }
 
   function renderWeek(plan) {
-    return `<div class="week">` +
+    return `<div>` +
       plan.map((p,i)=>`<div>${days[i]}：${p.name}</div>`).join("") +
       `</div>`;
   }
 
-  // 初期描画
-  renderRecipes();
+  // 初期表示
   renderHistory();
 </script>
 

@@ -63,6 +63,12 @@ button {
   border-radius: 16px;
   width: 90%;
 }
+.small-btn {
+  font-size: 12px;
+  background: none;
+  color: #999;
+  border: none;
+}
 </style>
 </head>
 <body>
@@ -76,11 +82,13 @@ button {
   <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
   <button onclick="addRecipe()">追加</button>
 </div>
+
 <!-- レシピ一覧 -->
 <div class="card">
   <h3>レシピ一覧</h3>
   <div id="recipeList"></div>
 </div>
+
 <!-- カレンダー -->
 <div class="card">
   <h3>ごはんカレンダー</h3>
@@ -101,7 +109,7 @@ button {
     <select id="mealSelect"></select>
 
     <button onclick="saveMeal()">保存</button>
-    <button onclick="closeModal()">閉じる</button>
+    <button class="small-btn" onclick="closeModal()">閉じる</button>
   </div>
 </div>
 
@@ -123,14 +131,16 @@ function addRecipe(){
   recipeName.value = "";
   recipeText.value = "";
   renderMealSelect();
+  renderRecipes();
 }
+
 function renderRecipes(){
   recipeList.innerHTML = "";
   recipes.forEach((r,i)=>{
     const div = document.createElement("div");
     div.innerHTML = `
       <strong>${r.name}</strong>
-      <button onclick="deleteRecipe(${i})">✕</button>
+      <button class="small-btn" onclick="deleteRecipe(${i})">✕</button>
       <div style="font-size:12px;color:#666">${r.recipe || ""}</div>
     `;
     recipeList.appendChild(div);
@@ -144,6 +154,7 @@ function deleteRecipe(index){
   renderRecipes();
   renderMealSelect();
 }
+
 // -------- プルダウン --------
 function renderMealSelect(){
   mealSelect.innerHTML = "";
@@ -212,10 +223,10 @@ function saveMeal(){
   renderCalendar();
 }
 
-// 初期化
+// 初期表示
 renderMealSelect();
+renderRecipes();
 renderCalendar();
-  renderRecipes();
 </script>
 
 </body>

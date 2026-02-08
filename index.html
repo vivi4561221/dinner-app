@@ -33,13 +33,11 @@
     .date { font-size: 12px; color: #999; }
     .small { font-size: 13px; color: #666; }
 
-    /* 小さい削除ボタン */
-    .delete-btn {
+    .icon-btn {
       background: none;
-      color: #ff7a7a;
       border: none;
       font-size: 14px;
-      margin-left: 8px;
+      margin-left: 6px;
       padding: 0;
     }
   </style>
@@ -50,13 +48,13 @@
 
 <!-- レシピ登録 -->
 <div class="card">
-  <h2>レシピ登録（候補）</h2>
+  <h2>レシピ登録</h2>
   <input id="recipeName" placeholder="料理名">
   <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
-  <button onclick="addRecipe()">レシピ追加</button>
+  <button id="recipeBtn" onclick="addOrUpdateRecipe()">レシピ追加</button>
 </div>
 
-<!-- レシピ一覧（ボタンで開く） -->
+<!-- レシピ一覧 -->
 <div class="card">
   <button onclick="toggleRecipes()">📚 レシピ一覧を見る</button>
   <div id="recipeList" style="display:none; margin-top:10px;"></div>
@@ -87,6 +85,8 @@
   let recipes = JSON.parse(localStorage.getItem("recipes") || "[]");
   let history = JSON.parse(localStorage.getItem("history") || "[]");
 
+  let editingIndex = null;
+
   function saveAll() {
     localStorage.setItem("recipes", JSON.stringify(recipes));
     localStorage.setItem("history", JSON.stringify(history));
@@ -94,16 +94,43 @@
 
   // ---------- レシピ ----------
 
-  function addRecipe() {
+  function addOrUpdateRecipe() {
     if (!recipeName.value) return alert("料理名を入れてください");
-    recipes.push({
-      id: Date.now(),
-      name: recipeName.value,
-      recipe: recipeText.value
-    });
+
+    if (editingIndex === null) {
+      // 新規追加
+      recipes.push({
+        id: Date.now(),
+        name: recipeName.value,
+        recipe: recipeText.value
+      });
+    } else {
+      // 更新
+      recipes[editingIndex].name = recipeName.value;
+      recipes[editingIndex].recipe = recipeText.value;
+      editingIndex = null;
+      recipeBtn.innerText = "レシピ追加";
+    }
+
     saveAll();
     recipeName.value = "";
     recipeText.value = "";
+    renderRecipes();
+  }
+
+  function editRecipe(index) {
+    const r = recipes[index];
+    recipeName.value = r.name;
+    recipeText.value = r.recipe;
+    editingIndex = index;
+    recipeBtn.innerText = "更新する";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function deleteRecipe(index) {
+    if (!confirm("このレシピを削除しますか？")) return;
+    recipes.splice(index, 1);
+    saveAll();
     renderRecipes();
   }
 
@@ -124,19 +151,13 @@
       div.innerHTML = `
         <div>
           <strong>${r.name}</strong>
-          <button class="delete-btn" onclick="deleteRecipe(${i})">✕</button>
+          <button class="icon-btn" onclick="editRecipe(${i})">✏️</button>
+          <button class="icon-btn" onclick="deleteRecipe(${i})">✕</button>
         </div>
         <div class="small">${r.recipe || "（レシピ未入力）"}</div>
       `;
       recipeList.appendChild(div);
     });
-  }
-
-  function deleteRecipe(index) {
-    if (!confirm("このレシピを削除しますか？")) return;
-    recipes.splice(index, 1);
-    saveAll();
-    renderRecipes();
   }
 
   // ---------- 履歴 ----------
@@ -185,7 +206,7 @@
         <strong>${h.menu}</strong>
         <div class="date">${h.date}</div>
         ${h.image ? `<img src="${h.image}">` : ""}
-        <button class="delete-btn" onclick="deleteHistory(${i})">✕</button>
+        <button class="icon-btn" onclick="deleteHistory(${i})">✕</button>
       `;
       historyList.appendChild(div);
     });

@@ -1,272 +1,197 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>夜ご飯メーカー</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      background: #fff7f2;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 { text-align: center; color: #ff7a7a; }
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    input, textarea, select, button {
-      width: 100%;
-      font-size: 16px;
-      padding: 10px;
-      margin-top: 8px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-    }
-    button { background: #ff7a7a; color: white; border: none; }
-    .item { margin-bottom: 12px; }
-    .item img { width: 100%; border-radius: 12px; margin-top: 8px; }
-    .date { font-size: 12px; color: #999; }
-    .small { font-size: 13px; color: #666; }
+<meta charset="UTF-8">
+<title>夜ご飯メーター × ごはんカレンダー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #fff7f2;
+  padding: 10px;
+}
+h1 { text-align:center; color:#ff7a7a; }
 
-    .icon-btn {
-      background: none;
-      border: none;
-      font-size: 14px;
-      margin-left: 6px;
-      padding: 0;
-    }
-  </style>
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+input, textarea, select, button {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+button {
+  background: #ff7a7a;
+  color: white;
+  border: none;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.day {
+  background: white;
+  border-radius: 10px;
+  padding: 6px;
+  min-height: 80px;
+  font-size: 11px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.day-number { font-weight:bold; }
+.meal { font-size: 10px; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  width: 90%;
+}
+</style>
 </head>
 <body>
 
-<h1>夜ご飯メーカー 🍽️</h1>
+<h1>夜ご飯メーター 🍽️📅</h1>
 
 <!-- レシピ登録 -->
 <div class="card">
-  <h2>レシピ登録</h2>
+  <h3>レシピ登録</h3>
   <input id="recipeName" placeholder="料理名">
   <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
-  <button id="recipeBtn" onclick="addOrUpdateRecipe()">レシピ追加</button>
+  <button onclick="addRecipe()">追加</button>
 </div>
 
-<!-- レシピ一覧 -->
+<!-- カレンダー -->
 <div class="card">
-  <button onclick="toggleRecipes()">📚 レシピ一覧を見る</button>
-  <div id="recipeList" style="display:none; margin-top:10px;"></div>
+  <h3>ごはんカレンダー</h3>
+  <div class="calendar" id="calendar"></div>
 </div>
 
-<!-- 週間献立 -->
-<div class="card">
-  <button onclick="generateWeek()">今週の献立を作る</button>
-  <div id="weekPlans"></div>
-</div>
+<!-- モーダル -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3 id="modalDate"></h3>
 
-<!-- 履歴登録（プルダウン） -->
-<div class="card">
-  <h2>実際に食べた記録</h2>
-  <select id="menuSelect"></select>
-  <input type="file" id="imageInput" accept="image/*">
-  <div class="small">※ 写真は入れなくてもOK</div>
-  <button onclick="addHistory()">記録する</button>
-</div>
+    <select id="mealType">
+      <option value="morning">朝</option>
+      <option value="lunch">昼</option>
+      <option value="dinner">晩</option>
+    </select>
 
-<!-- 履歴一覧 -->
-<div class="card">
-  <h2>履歴</h2>
-  <div id="historyList"></div>
+    <select id="mealSelect"></select>
+
+    <button onclick="saveMeal()">保存</button>
+    <button onclick="closeModal()">閉じる</button>
+  </div>
 </div>
 
 <script>
-  let recipes = JSON.parse(localStorage.getItem("recipes") || "[]");
-  let history = JSON.parse(localStorage.getItem("history") || "[]");
-  let editingIndex = null;
+// -------- データ --------
+let recipes = JSON.parse(localStorage.getItem("recipes") || "[]");
+let calendarData = JSON.parse(localStorage.getItem("mealCalendar") || "{}");
+let currentDate = "";
 
-  function saveAll() {
-    localStorage.setItem("recipes", JSON.stringify(recipes));
-    localStorage.setItem("history", JSON.stringify(history));
-  }
+// -------- レシピ --------
+function addRecipe(){
+  if(!recipeName.value) return alert("料理名入れて");
+  recipes.push({
+    id: Date.now(),
+    name: recipeName.value,
+    recipe: recipeText.value
+  });
+  localStorage.setItem("recipes", JSON.stringify(recipes));
+  recipeName.value = "";
+  recipeText.value = "";
+  renderMealSelect();
+}
 
-  // ---------- レシピ ----------
+// -------- プルダウン --------
+function renderMealSelect(){
+  mealSelect.innerHTML = "";
+  const first = document.createElement("option");
+  first.value = "";
+  first.textContent = "料理を選んでください";
+  mealSelect.appendChild(first);
 
-  function addOrUpdateRecipe() {
-    if (!recipeName.value) return alert("料理名を入れてください");
+  recipes.forEach(r=>{
+    const opt = document.createElement("option");
+    opt.value = r.name;
+    opt.textContent = r.name;
+    mealSelect.appendChild(opt);
+  });
+}
 
-    if (editingIndex === null) {
-      recipes.push({
-        id: Date.now(),
-        name: recipeName.value,
-        recipe: recipeText.value
-      });
-    } else {
-      recipes[editingIndex].name = recipeName.value;
-      recipes[editingIndex].recipe = recipeText.value;
-      editingIndex = null;
-      recipeBtn.innerText = "レシピ追加";
-    }
+// -------- カレンダー --------
+function renderCalendar(){
+  const cal = document.getElementById("calendar");
+  cal.innerHTML = "";
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const last = new Date(year, month+1, 0).getDate();
 
-    saveAll();
-    recipeName.value = "";
-    recipeText.value = "";
-    renderRecipes();
-    renderMenuSelect();
-  }
-
-  function editRecipe(index) {
-    const r = recipes[index];
-    recipeName.value = r.name;
-    recipeText.value = r.recipe;
-    editingIndex = index;
-    recipeBtn.innerText = "更新する";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function deleteRecipe(index) {
-    if (!confirm("このレシピを削除しますか？")) return;
-    recipes.splice(index, 1);
-    saveAll();
-    renderRecipes();
-    renderMenuSelect();
-  }
-
-  function toggleRecipes() {
-    if (recipeList.style.display === "none") {
-      recipeList.style.display = "block";
-      renderRecipes();
-    } else {
-      recipeList.style.display = "none";
-    }
-  }
-
-  function renderRecipes() {
-    recipeList.innerHTML = "";
-    recipes.forEach((r, i) => {
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <div>
-          <strong>${r.name}</strong>
-          <button class="icon-btn" onclick="editRecipe(${i})">✏️</button>
-          <button class="icon-btn" onclick="deleteRecipe(${i})">✕</button>
-        </div>
-        <div class="small">${r.recipe || "（レシピ未入力）"}</div>
-      `;
-      recipeList.appendChild(div);
-    });
-  }
-
-  // ---------- プルダウン ----------
-
-  function renderMenuSelect() {
-    menuSelect.innerHTML = "";
-    const first = document.createElement("option");
-    first.value = "";
-    first.textContent = "料理を選んでください";
-    menuSelect.appendChild(first);
-
-    recipes.forEach(r => {
-      const option = document.createElement("option");
-      option.value = r.name;
-      option.textContent = r.name;
-      menuSelect.appendChild(option);
-    });
-  }
-
-  // ---------- 履歴 ----------
-
-  function addHistory() {
-    const menu = menuSelect.value;
-    const file = imageInput.files[0];
-    if (!menu) return alert("料理を選んでください");
-
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        pushHistory(menu, e.target.result);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      pushHistory(menu, null);
-    }
-  }
-
-  function pushHistory(menu, image) {
-    history.unshift({
-      menu,
-      date: new Date().toLocaleDateString(),
-      image
-    });
-    saveAll();
-    renderHistory();
-    menuSelect.value = "";
-    imageInput.value = "";
-  }
-
-  function deleteHistory(index) {
-    if (!confirm("削除しますか？")) return;
-    history.splice(index, 1);
-    saveAll();
-    renderHistory();
-  }
-
-  function renderHistory() {
-    historyList.innerHTML = "";
-    history.forEach((h, i) => {
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <strong>${h.menu}</strong>
-        <div class="date">${h.date}</div>
-        ${h.image ? `<img src="${h.image}">` : ""}
-        <button class="icon-btn" onclick="deleteHistory(${i})">✕</button>
-      `;
-      historyList.appendChild(div);
-    });
-  }
-
-  // ---------- 週間献立 ----------
-
-  const days = ["月","火","水","木","金","土","日"];
-
-  function shuffle(arr) {
-    return arr.sort(() => Math.random() - 0.5);
-  }
-
-  function generateOneWeek() {
-    const shuffled = shuffle([...recipes]);
-    return shuffled.slice(0, 7);
-  }
-
-  function generateWeek() {
-    if (recipes.length < 7) {
-      alert("レシピを7個以上登録してください");
-      return;
-    }
-
-    const A = generateOneWeek();
-    const B = generateOneWeek();
-    const C = generateOneWeek();
-
-    weekPlans.innerHTML = `
-      <h3>案A</h3>${renderWeek(A)}
-      <h3>案B</h3>${renderWeek(B)}
-      <h3>案C</h3>${renderWeek(C)}
+  for(let d=1; d<=last; d++){
+    const key = `${year}-${month+1}-${d}`;
+    const dayData = calendarData[key] || {};
+    const div = document.createElement("div");
+    div.className = "day";
+    div.onclick = ()=>openModal(key);
+    div.innerHTML = `
+      <div class="day-number">${d}</div>
+      <div class="meal">🌅 ${dayData.morning || ""}</div>
+      <div class="meal">☀️ ${dayData.lunch || ""}</div>
+      <div class="meal">🌙 ${dayData.dinner || ""}</div>
     `;
+    cal.appendChild(div);
   }
+}
 
-  function renderWeek(plan) {
-    return `<div>` +
-      plan.map((p,i)=>`<div>${days[i]}：${p.name}</div>`).join("") +
-      `</div>`;
+// -------- モーダル --------
+function openModal(key){
+  currentDate = key;
+  modal.style.display = "flex";
+  modalDate.innerText = key;
+  mealSelect.value = "";
+}
+
+function closeModal(){
+  modal.style.display = "none";
+}
+
+function saveMeal(){
+  const type = mealType.value;
+  const name = mealSelect.value;
+  if(!name) return alert("料理を選んで");
+
+  if(!calendarData[currentDate]) {
+    calendarData[currentDate] = {};
   }
+  calendarData[currentDate][type] = name;
 
-  // 初期表示
-  renderMenuSelect();
-  renderHistory();
+  localStorage.setItem("mealCalendar", JSON.stringify(calendarData));
+  closeModal();
+  renderCalendar();
+}
+
+// 初期化
+renderMealSelect();
+renderCalendar();
 </script>
 
 </body>

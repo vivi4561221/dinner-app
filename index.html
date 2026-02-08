@@ -76,7 +76,11 @@ button {
   <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
   <button onclick="addRecipe()">追加</button>
 </div>
-
+<!-- レシピ一覧 -->
+<div class="card">
+  <h3>レシピ一覧</h3>
+  <div id="recipeList"></div>
+</div>
 <!-- カレンダー -->
 <div class="card">
   <h3>ごはんカレンダー</h3>
@@ -120,7 +124,26 @@ function addRecipe(){
   recipeText.value = "";
   renderMealSelect();
 }
+function renderRecipes(){
+  recipeList.innerHTML = "";
+  recipes.forEach((r,i)=>{
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <strong>${r.name}</strong>
+      <button onclick="deleteRecipe(${i})">✕</button>
+      <div style="font-size:12px;color:#666">${r.recipe || ""}</div>
+    `;
+    recipeList.appendChild(div);
+  });
+}
 
+function deleteRecipe(index){
+  if(!confirm("削除しますか？")) return;
+  recipes.splice(index,1);
+  localStorage.setItem("recipes", JSON.stringify(recipes));
+  renderRecipes();
+  renderMealSelect();
+}
 // -------- プルダウン --------
 function renderMealSelect(){
   mealSelect.innerHTML = "";
@@ -170,7 +193,7 @@ function openModal(key){
   mealSelect.value = "";
 }
 
-function closeModal(){
+function closeModal()
   modal.style.display = "none";
 }
 
@@ -192,6 +215,7 @@ function saveMeal(){
 // 初期化
 renderMealSelect();
 renderCalendar();
+  renderRecipes();
 </script>
 
 </body>

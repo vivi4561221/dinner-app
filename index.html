@@ -80,7 +80,7 @@ button {
   <h3>レシピ登録</h3>
   <input id="recipeName" placeholder="料理名">
   <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
-  <button onclick="addRecipe()">追加</button>
+  <button id="recipeBtn" onclick="addOrUpdateRecipe()">追加</button>
 </div>
 
 <!-- レシピ一覧 -->
@@ -118,20 +118,41 @@ button {
 let recipes = JSON.parse(localStorage.getItem("recipes") || "[]");
 let calendarData = JSON.parse(localStorage.getItem("mealCalendar") || "{}");
 let currentDate = "";
+let editingIndex = null;
 
-// -------- レシピ --------
-function addRecipe(){
+// -------- レシピ（追加＆編集） --------
+function addOrUpdateRecipe(){
   if(!recipeName.value) return alert("料理名入れて");
-  recipes.push({
-    id: Date.now(),
-    name: recipeName.value,
-    recipe: recipeText.value
-  });
+
+  if(editingIndex === null){
+    // 新規
+    recipes.push({
+      id: Date.now(),
+      name: recipeName.value,
+      recipe: recipeText.value
+    });
+  } else {
+    // 更新
+    recipes[editingIndex].name = recipeName.value;
+    recipes[editingIndex].recipe = recipeText.value;
+    editingIndex = null;
+    recipeBtn.innerText = "追加";
+  }
+
   localStorage.setItem("recipes", JSON.stringify(recipes));
   recipeName.value = "";
   recipeText.value = "";
-  renderMealSelect();
   renderRecipes();
+  renderMealSelect();
+}
+
+function editRecipe(index){
+  const r = recipes[index];
+  recipeName.value = r.name;
+  recipeText.value = r.recipe;
+  editingIndex = index;
+  recipeBtn.innerText = "更新する";
+  window.scrollTo({top:0, behavior:"smooth"});
 }
 
 function renderRecipes(){
@@ -140,6 +161,7 @@ function renderRecipes(){
     const div = document.createElement("div");
     div.innerHTML = `
       <strong>${r.name}</strong>
+      <button class="small-btn" onclick="editRecipe(${i})">✏️</button>
       <button class="small-btn" onclick="deleteRecipe(${i})">✕</button>
       <div style="font-size:12px;color:#666">${r.recipe || ""}</div>
     `;
@@ -224,8 +246,8 @@ function saveMeal(){
 }
 
 // 初期表示
-renderMealSelect();
 renderRecipes();
+renderMealSelect();
 renderCalendar();
 </script>
 

@@ -33,6 +33,18 @@ button {
   border: none;
 }
 
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+.setting-btn {
+  background: none;
+  color: #ff7a7a;
+  font-size: 18px;
+  border: none;
+}
+
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -63,6 +75,7 @@ button {
   border-radius: 16px;
   width: 90%;
 }
+
 .small-btn {
   font-size: 12px;
   background: none;
@@ -75,18 +88,24 @@ button {
 
 <h1>夜ご飯メーター 🍽️📅</h1>
 
-<!-- レシピ登録 -->
-<div class="card">
-  <h3>レシピ登録</h3>
-  <input id="recipeName" placeholder="料理名">
-  <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
-  <button id="recipeBtn" onclick="addOrUpdateRecipe()">追加</button>
+<!-- 設定ボタン -->
+<div class="top-bar">
+  <button class="setting-btn" onclick="toggleRecipes()">⚙️ レシピ管理</button>
 </div>
 
-<!-- レシピ一覧 -->
-<div class="card">
-  <h3>レシピ一覧</h3>
-  <div id="recipeList"></div>
+<!-- レシピ管理エリア（普段は非表示） -->
+<div id="recipeArea" style="display:none;">
+  <div class="card">
+    <h3>レシピ登録</h3>
+    <input id="recipeName" placeholder="料理名">
+    <textarea id="recipeText" placeholder="レシピ（任意）"></textarea>
+    <button id="recipeBtn" onclick="addOrUpdateRecipe()">追加</button>
+  </div>
+
+  <div class="card">
+    <h3>レシピ一覧</h3>
+    <div id="recipeList"></div>
+  </div>
 </div>
 
 <!-- カレンダー -->
@@ -120,19 +139,23 @@ let calendarData = JSON.parse(localStorage.getItem("mealCalendar") || "{}");
 let currentDate = "";
 let editingIndex = null;
 
-// -------- レシピ（追加＆編集） --------
+// -------- トグル --------
+function toggleRecipes(){
+  const area = document.getElementById("recipeArea");
+  area.style.display = area.style.display === "none" ? "block" : "none";
+}
+
+// -------- レシピ --------
 function addOrUpdateRecipe(){
   if(!recipeName.value) return alert("料理名入れて");
 
   if(editingIndex === null){
-    // 新規
     recipes.push({
       id: Date.now(),
       name: recipeName.value,
       recipe: recipeText.value
     });
   } else {
-    // 更新
     recipes[editingIndex].name = recipeName.value;
     recipes[editingIndex].recipe = recipeText.value;
     editingIndex = null;
@@ -152,7 +175,7 @@ function editRecipe(index){
   recipeText.value = r.recipe;
   editingIndex = index;
   recipeBtn.innerText = "更新する";
-  window.scrollTo({top:0, behavior:"smooth"});
+  toggleRecipes(); // 管理画面を開く
 }
 
 function renderRecipes(){
